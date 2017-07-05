@@ -1,39 +1,29 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required(VERSION 3.7)
 
-project (sdk-dslink-cpp)
+project (sdk-dslink-cpp-poc)
 
-set_property (GLOBAL PROPERTY USE_FOLDERS ON)
+set(CMAKE_CXX_STANDARD 11)
 
-if (WIN32)
-
-#-------------------------------------------------
-# Boost
-#
-
-set (Boost_DEBUG ON) 
-set (BOOST_ROOT C:\\local\\boost_1_64_0)
-set (BOOST_INCLUDEDIR ${BOOST_ROOT}\\include\\boost-1_64)
+set (Boost_DEBUG ON)
 
 set (Boost_NO_SYSTEM_PATHS ON)
-set (Boost_USE_STATIC_LIBS ON)
+set (Boost_USE_STATIC_LIBS OFF)
 set (Boost_USE_MULTITHREAD ON)
 set (Boost_USE_STATIC_RUNTIME OFF)
 
-set (BOOST_LIBS system)
 
-find_package (Boost 1.64.0 REQUIRED COMPONENTS ${BOOST_LIBS})
-if (Boost_FOUND)
-  include_directories (${Boost_INCLUDE_DIRS})
-  link_directories (${Boost_LIBRARY_DIRS})
-endif (Boost_FOUND)
+find_package(OpenSSL REQUIRED)
+# include_directories(${OPENSSL_INCLUDE_DIR})
+set(EXTRA_LIBS ${EXTRA_LIBS} ${OPENSSL_LIBRARIES})
 
-set (USED_LIBS ${BOOST_LIBRARIES})
+find_package(Boost 1.6 REQUIRED system)
+include_directories(${Boost_INCLUDE_DIRS})
+set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 
-#-------------------------------------------------
-# Build
-#
+set (SOURCE_FILES
+	message.cpp
+	connection.cpp)
+add_executable(xyz ${SOURCE_FILES})
+target_link_libraries(xyz ${EXTRA_LIBS})
 
-# add_executable (bt_main bt_main.cpp)
-# target_link_libraries (bt_main ${USED_LIBS})
-
-endif (WIN32)
+# target_compile_features(client PRIVATE cxx_range_for)
