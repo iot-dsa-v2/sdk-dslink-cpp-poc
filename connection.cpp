@@ -2,11 +2,6 @@
 
 bool Connection::send(boost::asio::const_buffer buffer)
 {
-	return false;
+	return true;
 }
 
-int main() {
-	Connection conn;
-
-	return 0;
-}
