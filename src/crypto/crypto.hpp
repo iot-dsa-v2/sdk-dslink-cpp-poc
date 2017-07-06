@@ -1,5 +1,4 @@
-#ifndef DSA_CRYPTO_HPP
-#define DSA_CRYPTO_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -103,5 +102,3 @@ inline std::ostream& operator << (std::ostream& os, const std::vector<byte>& v) 
   ss << "]";
   return os << ss.str();  
 }
-
-#endif // DSA_CRYPTO_HPP

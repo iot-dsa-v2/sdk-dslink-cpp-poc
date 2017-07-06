@@ -9,5 +9,7 @@ if (USE_SSL)
   add_definitions(-DUSE_SSL=true)
 endif(USE_SSL)
 
+add_subdirectory("${PROJECT_SOURCE_DIR}/client")
+add_subdirectory("${PROJECT_SOURCE_DIR}/server")
 add_subdirectory("${PROJECT_SOURCE_DIR}/crypto")
 add_subdirectory("${PROJECT_SOURCE_DIR}/main")
