@@ -21,7 +21,7 @@ void WorkerThread(boost::shared_ptr<boost::asio::io_service> io_service) {
       if (err) {
         ss.clear();
         ss << "[" << boost::this_thread::get_id() << "] Error: " << err
-                  << std::endl;
+          << std::endl;
         std::cout << ss.str();
       } else {
         return;
@@ -29,14 +29,14 @@ void WorkerThread(boost::shared_ptr<boost::asio::io_service> io_service) {
     } catch (std::exception &e) {
       ss.clear();
       ss << "[" << boost::this_thread::get_id()
-                << "] Exception: " << e.what() << std::endl;
+        << "] Exception: " << e.what() << std::endl;
       std::cout << ss.str();
     }
   }
 
   ss.clear();
   ss << "[" << boost::this_thread::get_id() << "] Worker stop"
-            << std::endl;
+    << std::endl;
   std::cout << ss.str();
 }
 
@@ -49,22 +49,22 @@ int main(int argc, char *argv[]) {
     int port;
     if (argc < 2) {
       port = 8080;
-    }
-    else {
+    } else {
       port = std::atoi(argv[1]);
     }
 
+
     boost::shared_ptr<boost::asio::io_service> io_service(
-        new boost::asio::io_service);
+      new boost::asio::io_service);
     boost::shared_ptr<boost::asio::io_service::work> work(
-        new boost::asio::io_service::work(*io_service));
+      new boost::asio::io_service::work(*io_service));
 
     boost::thread_group worker_threads;
     for (int i = 0; i < 5; ++i) {
       worker_threads.create_thread(boost::bind(&WorkerThread, io_service));
     }
 
-    server s(io_service, port);
+    Server s(io_service, port);
 
     worker_threads.join_all();
   } catch (std::exception &e) {

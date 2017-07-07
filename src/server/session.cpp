@@ -1,7 +1,13 @@
 #include "session.hpp"
 
-bool session::send(boost::asio::const_buffer buffer)
-{
-	return true;
+#include "connection.hpp";
+Session::Session(Connection * connection)
+  :connection(connection) {
+
+}
+
+
+bool Session::send(boost::asio::const_buffer buffer) {
+  return true;
 }
 

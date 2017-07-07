@@ -19,9 +19,10 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
 typedef unsigned int uint;
 #endif
 
-class connection;
+class Connection;
+class Session;
 
-class server {
+class Server {
 private:
   boost::shared_ptr<boost::asio::io_service> io_service;
   boost::asio::ip::tcp::acceptor acceptor;
@@ -36,15 +37,16 @@ private:
 
   std::atomic_int session_count;
 
-  friend connection;
+  friend Connection;
 
 public:
-  server(boost::shared_ptr<boost::asio::io_service> io_service, short port);
+  Server(boost::shared_ptr<boost::asio::io_service> io_service, short port);
 
-  void handle_accept(connection *new_session,
-                     const boost::system::error_code &error);
+  void handle_accept(Connection *new_session,
+    const boost::system::error_code &error);
 
-  void end_session(connection *s);
+  void end_connection(Connection *s);
+  void end_session(Session *s);
 
   int get_session_id();
 };

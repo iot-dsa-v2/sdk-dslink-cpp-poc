@@ -2,7 +2,12 @@
 
 #include <boost/asio.hpp>
 
-class session {
-	bool send(boost::asio::const_buffer);
+class Connection;
+
+class Session {
+  Connection * connection;
+public:
+  Session(Connection *);
+  bool send(boost::asio::const_buffer);
 };
 
