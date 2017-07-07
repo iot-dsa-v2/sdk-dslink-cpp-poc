@@ -34,7 +34,8 @@ set(EXTRA_LIBS ${EXTRA_LIBS} crypto)
 set(SOURCE_FILES 
   main.cpp
   server.cpp
-  session.cpp)
+  session.cpp
+  connection.cpp)
 
 add_executable(server ${SOURCE_FILES})
 target_link_libraries(server ${EXTRA_LIBS})

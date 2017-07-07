@@ -40,7 +40,6 @@ set(EXTRA_LIBS ${EXTRA_LIBS}
 # set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 
 set (SOURCE_FILES
-	connection.cpp
 	main.cpp)
 
 add_executable(main ${SOURCE_FILES})

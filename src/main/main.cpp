@@ -1,4 +1,3 @@
-#include "connection.h"
 #include "message.hpp"
 #include "crypto.hpp"
 #include <vector>

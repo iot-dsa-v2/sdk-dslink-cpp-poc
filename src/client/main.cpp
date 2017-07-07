@@ -12,9 +12,9 @@
 
 void WorkerThread(boost::shared_ptr<boost::asio::io_service> io_service) {
   std::stringstream ss;
-  ss << "[" << boost::this_thread::get_id() << "] Worker start"
-            << std::endl;
-  std::cout << ss.str();
+  // ss << "[" << boost::this_thread::get_id() << "] Worker start"
+  //           << std::endl;
+  // std::cout << ss.str();
 
   while (true) {
     try {
@@ -64,8 +64,6 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < 5; ++i) {
       worker_threads.create_thread(boost::bind(WorkerThread, io_service));
     }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-    std::cout << std::endl;
     
 #ifndef USE_SSL // don't USE_SSL
     client c(io_service, argv[1], std::atoi(argv[2]));
