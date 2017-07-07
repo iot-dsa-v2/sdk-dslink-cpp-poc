@@ -46,9 +46,12 @@ int main(int argc, char *argv[]) {
 #endif // USE_SSL
 
   try {
-    if (argc != 2) {
-      std::cerr << "Usage: server <port>\n";
-      return 1;
+    int port;
+    if (argc < 2) {
+      port = 8080;
+    }
+    else {
+      port = std::atoi(argv[1]);
     }
 
     boost::shared_ptr<boost::asio::io_service> io_service(
@@ -61,7 +64,7 @@ int main(int argc, char *argv[]) {
       worker_threads.create_thread(boost::bind(&WorkerThread, io_service));
     }
 
-    server s(io_service, std::atoi(argv[1]));
+    server s(io_service, port);
 
     worker_threads.join_all();
   } catch (std::exception &e) {
