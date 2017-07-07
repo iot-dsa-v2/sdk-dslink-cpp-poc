@@ -53,8 +53,7 @@ private:
   void f3_sent(const boost::system::error_code &err,
     size_t bytes_transferred);
 
-  void read_loop(const boost::system::error_code &err,
-    size_t bytes_transferred);
+
 
 public:
 #ifdef USE_SSL
@@ -74,6 +73,7 @@ public:
 
   void start();
 
+  boost::asio::mutable_buffers_1 get_read_buffer();
   void handle_read(const boost::system::error_code &error,
     size_t bytes_transferred);
 

@@ -69,13 +69,13 @@ void Server::handle_accept(Connection *new_connection,
   }
 }
 
-void Server::end_connection(Connection *s) {
-  delete s;
-}
-
-void Server::end_session(Session *s) {
-  delete s;
-}
+//void Server::end_connection(Connection *s) {
+//  delete s;
+//}
+//
+//void Server::end_session(Session *s) {
+//  delete s;
+//}
 
 #ifdef USE_SSL
 std::string Server::get_password() const {

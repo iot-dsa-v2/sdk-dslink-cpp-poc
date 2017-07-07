@@ -9,6 +9,7 @@
 #include <boost/thread.hpp>
 
 #include "server.hpp"
+#include "session.hpp"
 
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp>
@@ -18,7 +19,7 @@
   if (X) {                                                                     \
     ss << "fail" << std::endl;                                                 \
     std::cout << ss.str();                                                     \
-    serv.end_connection(this);                                                    \
+    delete this;                                                    \
     return;                                                                    \
   }
 
@@ -67,7 +68,7 @@ void connection::handle_ssl_handshake(
       << std::endl;
     std::cout << ss.str();
 
-    serv.end_connection(this);
+    delete this;
   }
 }
 
@@ -100,7 +101,7 @@ void Connection::f0_received(const boost::system::error_code &err,
     ss << "[clien::f1_received] Error: " << err << std::endl;
     std::cout << ss.str();
 
-    serv.end_connection(this);
+    delete this;
   } else {
     std::stringstream ss;
     ss << "f0 received, " << bytes_transferred << " bytes transferred"
@@ -224,7 +225,7 @@ void Connection::f1_sent(const boost::system::error_code &error,
     ss << "[connection::f1_sent] Error: " << error << std::endl;
     std::cerr << ss.str();
 
-    serv.end_connection(this);
+    delete this;
   } else {
     std::stringstream ss;
     ss << "f1 sent, " << bytes_transferred << " bytes transferred"
@@ -349,27 +350,12 @@ void Connection::f3_sent(const boost::system::error_code &error,
     ss << std::endl << "HANDSHAKE SUCCESSFUL" << std::endl;
     std::cout << ss.str();
 
-    sock.async_read_some(
-      boost::asio::buffer(read_buf, max_length),
-      boost::bind(&Connection::read_loop, this,
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred));
+    new Session(this);
+
   }
 }
 
-void Connection::read_loop(const boost::system::error_code &error,
-  size_t bytes_transferred) {
-  if (!error) {
-    sock.async_read_some(
-      boost::asio::buffer(read_buf, max_length),
-      boost::bind(&Connection::read_loop, this,
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred));
-  } else {
-    sock.close();
-    serv.end_connection(this);
-  }
-}
+
 
 /**
  * f1 structure:
@@ -476,4 +462,9 @@ int Connection::load_f3() {
   std::memcpy(write_buf, &total, sizeof(total));
 
   return total;
+}
+
+
+boost::asio::mutable_buffers_1 Connection::get_read_buffer() {
+  return boost::asio::buffer(read_buf, max_length);
 }

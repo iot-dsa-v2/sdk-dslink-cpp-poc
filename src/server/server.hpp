@@ -45,8 +45,6 @@ public:
   void handle_accept(Connection *new_session,
     const boost::system::error_code &error);
 
-  void end_connection(Connection *s);
-  void end_session(Session *s);
 
   int get_session_id();
 };
