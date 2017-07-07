@@ -1,12 +1,12 @@
 #include "connection.h"
-#include "message.h"
+#include "message.hpp"
 #include "crypto.hpp"
 #include <vector>
 #include <iostream>
 
 int main() {
-	MessageFactory mf = MessageFactory();
-	Message* sub_msg_hdl = mf.create_message(MSGTYPE_SUBSCRIBE);
+	dsa::message::factory mf;
+	dsa::message::basic_message* sub_msg_hdl = mf.new_message(dsa::message::MESSAGE_SUBSCRIBE);
 	sub_msg_hdl->do_something();
 
 	std::vector<byte> salt = dsa::gen_salt(32);

@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "server.hpp"
 #include <cstring>
 #include <string>
 #include <vector>
@@ -472,15 +472,6 @@ int server::session::load_f3() {
 
   /* write total length */
   std::memcpy(write_buf, &total, sizeof(total));
-
-  // mux.lock();
-  // for (int i = 0; i < total; ++i) {
-  //   if (write_buf[i] < 0x10)
-  //     std::cout << 0;
-  //   std::cout << std::hex << (uint)write_buf[i];
-  // }
-  // std::cout << std::dec << std::endl;
-  // mux.unlock();
 
   return total;
 }

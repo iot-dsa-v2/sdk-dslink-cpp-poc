@@ -27,17 +27,19 @@ if (UNIX)
   # include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-include_directories(${CMAKE_SOURCE_DIR}/src/crypto)
+include_directories(
+  ${CMAKE_SOURCE_DIR}/src/crypto
+  ${CMAKE_SOURCE_DIR}/src/message)
 
 set(EXTRA_LIBS ${EXTRA_LIBS} 
   ${OPENSSL_LIBRARIES}
   ${Boost_LIBRARIES}
-  crypto)
+  crypto
+  message)
 
 # set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 
 set (SOURCE_FILES
-	message.cpp
 	connection.cpp
 	main.cpp)
 
