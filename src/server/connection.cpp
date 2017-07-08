@@ -52,24 +52,24 @@ Connection::~Connection() {
 }
 
 #ifdef USE_SSL
-void connection::start() {
+void Connection::start() {
   sock.async_handshake(boost::asio::ssl::stream_base::Server,
-    boost::bind(&connection::handle_ssl_handshake,
+    boost::bind(&Connection::handle_ssl_handshake,
       this, boost::asio::placeholders::error));
 }
 
-void connection::handle_ssl_handshake(
+void Connection::handle_ssl_handshake(
   const boost::system::error_code &error) {
   if (!error) {
     message_buffer &buf = buffer_factory.get_buffer();
     sock.async_read_some(
       buf.asio_buffer(),
-      boost::bind(&connection::f0_received, this, buf,
+      boost::bind(&Connection::f0_received, this, buf,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
   } else {
     std::stringstream ss;
-    ss << "[connection::handle_ssl_handshake] Error: " << error
+    ss << "[Connection::handle_ssl_handshake] Error: " << error
       << std::endl;
     std::cout << ss.str();
 
@@ -77,7 +77,7 @@ void connection::handle_ssl_handshake(
   }
 }
 
-ssl_socket::lowest_layer_type &connection::socket() {
+ssl_socket::lowest_layer_type &Connection::socket() {
   return sock.lowest_layer();
 }
 #else  // don't USE_SSL
@@ -232,7 +232,7 @@ void Connection::f1_sent(message_buffer* buf,
   size_t bytes_transferred) {
   if (error) {
     std::stringstream ss;
-    ss << "[connection::f1_sent] Error: " << error << std::endl;
+    ss << "[Connection::f1_sent] Error: " << error << std::endl;
     std::cerr << ss.str();
 
     delete this;
@@ -262,7 +262,7 @@ void Connection::f2_received(message_buffer *buf,
   std::cout << std::endl;
   if (error) {
     std::stringstream ss;
-    ss << "[connection::f2_received] Error: " << error << std::endl;
+    ss << "[Connection::f2_received] Error: " << error << std::endl;
     std::cerr << ss.str();
   } else {
     std::stringstream ss;
@@ -354,7 +354,7 @@ void Connection::f3_sent(message_buffer* buf,
   size_t bytes_transferred) {
   if (error) {
     std::stringstream ss;
-    ss << "[connection::f3_sent] Error: " << error << std::endl;
+    ss << "[Connection::f3_sent] Error: " << error << std::endl;
     std::cout << ss.str();
   } else {
     std::stringstream ss;
