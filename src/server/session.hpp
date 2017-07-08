@@ -7,46 +7,28 @@
 
 #include "message.hpp"
 
-class connection;
+using namespace dsa::message;
 
-using namespace dsa;
-using namespace message;
+class Connection;
 
-class session {
+class Session {
+  Connection * connection;
+
 public:
-	session(boost::asio::io_service& io_service);
-
-	/**
-	 * in: new connection
-	 * out: connection id
-	 */
-	int add_connection(connection* new_connection);
-
-	/**
-	 * in: connection id
-	 * out: true if success
-	 */
-	bool remove_connection(int id);
-
-	/**
-	 * in: message
-	 * out: true if message staged for write
-	 */
-	bool send_message(dsa::message::basic_message buf);
+  Session(Connection *);
+  ~Session();
+  bool send(boost::asio::const_buffer);
 
 private:
+	buffer_factory buffer_factory;
+  std::vector<uint32_t> subscriptionIds;
+  void receive_request(message_buffer* buf,
+	  const boost::system::error_code &err, size_t bytes_transferred);
+  void read_some();
+  bool parse_message(message_buffer* buf, size_t bytes_transferred);
 
-	
-
-	std::map<int, connection*> connections;
-	boost::asio::io_service::strand strand;
-
-	basic_message prepare_and_recycle_buf(buffer_factory::buffer& buf);
-
-	buffer_factory::buffer& get_buffer();
-
-	void incoming(buffer_factory::buffer &buf);
-
-	friend connection;
+  std::unique_ptr<boost::asio::deadline_timer> timer;
+  void start_timer();
+  bool on_timer(const boost::system::error_code &err);
 };
 

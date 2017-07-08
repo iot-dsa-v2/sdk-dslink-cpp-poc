@@ -50,10 +50,17 @@ int main(int argc, char *argv[]) {
 #endif // USE_SSL
 
   try {
+    char * host;
+    int port;
     if (argc < 3) {
-      std::cout << "Usage: client <host> <port>" << std::endl;
-      return 1;
+      host = "127.0.0.1";
+      port = 8080;
     }
+    else {
+      host = argv[1];
+      port = std::atoi(argv[2]);
+    }
+    
 
     boost::shared_ptr<boost::asio::io_service> io_service(
         new boost::asio::io_service);
@@ -66,12 +73,12 @@ int main(int argc, char *argv[]) {
     }
     
 #ifndef USE_SSL // don't USE_SSL
-    client c(io_service, argv[1], std::atoi(argv[2]));
+    client c(io_service, host, port);
 #else // USE_SSL
     boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
     ctx.load_verify_file("certificate.pem");
 
-    client c(io_service, argv[1], std::atoi(argv[2]), ctx);
+    client c(io_service, host, port, ctx);
 #endif // USE_SSL
 
     worker_threads.join_all();
