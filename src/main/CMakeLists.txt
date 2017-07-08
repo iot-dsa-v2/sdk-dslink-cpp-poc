@@ -18,7 +18,7 @@ if (UNIX)
 endif()
 
 find_package(OpenSSL REQUIRED)
-find_package(Boost 1.6 REQUIRED system thread)
+find_package(Boost 1.6 REQUIRED system thread date_time)
 
 if (UNIX)
   include_directories(
