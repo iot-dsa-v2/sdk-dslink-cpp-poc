@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <iostream>
 #include <sstream>
 #include <openssl/ec.h>
@@ -88,6 +89,35 @@ inline std::ostream& operator << (std::ostream& os, const std::vector<T>& v) {
 }
 
 inline std::ostream& operator << (std::ostream& os, const std::vector<byte>& v) {
+  std::stringstream ss;
+  ss << "[";
+  if (v.size() > 0) {
+    for (int i = 0; i < v.size() - 1; ++i) {
+      ss << "x";
+      if (v[i] < 0x10) ss << 0;
+      ss << std::hex << (uint)v[i] << std::dec << ", ";
+    }
+    uint last = v[v.size() - 1];
+    ss << "x" << (last < 0x10 ? "0" : "") << std::hex << last << std::dec;
+  }
+  ss << "]";
+  return os << ss.str();  
+}
+
+template <typename T, int S>
+inline std::ostream& operator << (std::ostream& os, const std::array<T, S>& v) {
+  os << "[";
+  if (v.size() > 0) {
+    for (int i = 0; i < v.size() - 1; ++i)
+      os << v[i] << ", ";
+    os << v[v.size() - 1];
+  }
+  os << "]";
+  return os;  
+}
+
+template <int S>
+inline std::ostream& operator << (std::ostream& os, const std::array<byte, S>& v) {
   std::stringstream ss;
   ss << "[";
   if (v.size() > 0) {

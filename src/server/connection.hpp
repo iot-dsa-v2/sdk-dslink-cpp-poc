@@ -6,6 +6,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include "crypto.hpp"
+#include "message.hpp"
+
+using namespace dsa::message;
 
 class server;
 
@@ -19,9 +22,7 @@ class connection {
 #endif // USE_SSL
     boost::asio::io_service::strand strand;
 
-    enum { max_length = 512, f0_bytes_wo_dsid = 112 };
-    byte write_buf[max_length];
-    byte read_buf[max_length];
+    dsa::message::buffer_factory buffer_factory;
 
     std::vector<byte> shared_secret;
     std::vector<byte> client_dsid;
@@ -39,21 +40,24 @@ class connection {
     bool is_requester;
     bool is_responder;
 
-    int load_f1();
-    int load_f3();
+    int load_f1(message_buffer* buf);
+    int load_f3(message_buffer* buf);
     void compute_secret();
 
-    void f0_received(const boost::system::error_code &err,
+    void f0_received(message_buffer* buf,
+                     const boost::system::error_code &err,
                      size_t bytes_transferred);
-    void f1_sent(const boost::system::error_code &err,
-                 size_t bytes_transferred);
-    void read_f2();
-    void f2_received(const boost::system::error_code &err,
+    void f1_sent(message_buffer* buf,
+                     const boost::system::error_code &err,
                      size_t bytes_transferred);
-    void f3_sent(const boost::system::error_code &err,
+    void f2_received(message_buffer* buf,
+                     const boost::system::error_code &err,
+                     size_t bytes_transferred);
+    void f3_sent(message_buffer* buf,
+                 const boost::system::error_code &err,
                  size_t bytes_transferred);
-
-    void read_loop(const boost::system::error_code &err,
+    void read_loop(message_buffer* buf,
+                   const boost::system::error_code &err,
                    size_t bytes_transferred);
 
   public:
@@ -74,9 +78,9 @@ class connection {
 
     void start();
 
-    void handle_read(const boost::system::error_code &error,
-                     size_t bytes_transferred);
+    // void handle_read(const boost::system::error_code &error,
+    //                  size_t bytes_transferred);
 
-    void handle_write(const boost::system::error_code &error,
-                      size_t bytes_transferred);
+    // void handle_write(const boost::system::error_code &error,
+    //                   size_t bytes_transferred);
   };

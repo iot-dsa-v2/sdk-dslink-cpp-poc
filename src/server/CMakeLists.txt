@@ -23,13 +23,16 @@ if (UNIX)
   set(BOOST_LIBRARYDIR "/usr/local/Cellar/boost/1.64.0_1/lib")
 endif()
 
-find_package(Boost 1.6 REQUIRED COMPONENTS system thread date_time)
+find_package(Boost 1.6 REQUIRED COMPONENTS system thread)
 
 include_directories(${Boost_INCLUDE_DIRS})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 
 include_directories(${CMAKE_SOURCE_DIR}/src/crypto)
 set(EXTRA_LIBS ${EXTRA_LIBS} crypto)
+
+include_directories(${CMAKE_SOURCE_DIR}/src/message)
+set(EXTRA_LIBS ${EXTRA_LIBS} message)
 
 set(SOURCE_FILES 
   main.cpp
