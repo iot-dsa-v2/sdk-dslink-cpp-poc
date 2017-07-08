@@ -11,7 +11,7 @@ class Server;
 
 class Connection {
 private:
-  Server &serv;
+  
 #ifdef USE_SSL
   ssl_socket sock;
 #else  // don't USE_SSL
@@ -19,9 +19,7 @@ private:
 #endif // USE_SSL
   boost::asio::io_service::strand strand;
 
-  enum { max_length = 512, f0_bytes_wo_dsid = 112 };
-  byte write_buf[max_length];
-  byte read_buf[max_length];
+
 
   std::vector<byte> shared_secret;
   std::vector<byte> client_dsid;
@@ -56,6 +54,7 @@ private:
 
 
 public:
+  Server &serv;
 #ifdef USE_SSL
   connection(Server &s, boost::shared_ptr<boost::asio::io_service> io_service,
     boost::asio::ssl::context &context);
@@ -68,6 +67,10 @@ public:
 
   boost::asio::ip::tcp::socket &socket();
 #endif // USE_SSL
+
+  enum { max_length = 512, f0_bytes_wo_dsid = 112 };
+  byte write_buf[max_length];
+  byte read_buf[max_length];
 
   ~Connection();
 

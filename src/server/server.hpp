@@ -24,7 +24,7 @@ class Session;
 
 class Server {
 private:
-  boost::shared_ptr<boost::asio::io_service> io_service;
+  
   boost::asio::ip::tcp::acceptor acceptor;
   std::string dsid;
   std::vector<byte> public_key;
@@ -40,6 +40,8 @@ private:
   friend Connection;
 
 public:
+  const boost::shared_ptr<boost::asio::io_service> io_service;
+
   Server(boost::shared_ptr<boost::asio::io_service> io_service, short port);
 
   void handle_accept(Connection *new_session,
