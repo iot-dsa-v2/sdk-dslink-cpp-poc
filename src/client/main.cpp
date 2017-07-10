@@ -52,12 +52,17 @@ int main(int argc, char *argv[]) {
   try {
     char * host;
     int port;
+    size_t num_req = 4;
+
     if (argc < 3) {
       host = "127.0.0.1";
       port = 8080;
     } else {
       host = argv[1];
       port = std::atoi(argv[2]);
+      if (argc > 3) {
+        num_req = std::atoi(argv[3]);
+      }
     }
     
 
@@ -72,7 +77,7 @@ int main(int argc, char *argv[]) {
     }
     
 #ifndef USE_SSL // don't USE_SSL
-    client c(io_service, host, port, 4);
+    client c(io_service, host, port, num_req);
 #else // USE_SSL
     boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
     ctx.load_verify_file("certificate.pem");
