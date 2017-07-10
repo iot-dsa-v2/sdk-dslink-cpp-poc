@@ -16,11 +16,15 @@ Session::Session(Connection * connection)
   //  boost::asio::placeholders::error,
   //  boost::asio::placeholders::bytes_transferred));
   read_some();
+
+  static boost::posix_time::milliseconds interval(10);
+  timer.reset(new boost::asio::deadline_timer(*(connection->serv.io_service), interval));
+
   start_timer();
 }
 
 Session::~Session() {
-  timer.reset();
+  timer->cancel();
   delete connection;
 }
 bool Session::send(boost::asio::const_buffer buffer) {
@@ -86,9 +90,6 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
 }
 
 void Session::start_timer() {
-  static boost::posix_time::milliseconds interval(10);
-
-  timer.reset(new boost::asio::deadline_timer(*(connection->serv.io_service), interval));
   timer->async_wait(boost::bind(
     &Session::on_timer,
     this,

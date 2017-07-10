@@ -23,7 +23,7 @@ public:
   bool send(boost::asio::const_buffer);
 
 private:
-	buffer_factory buffer_factory;
+	dsa::message::buffer_factory buffer_factory;
   std::vector<uint32_t> subscriptionIds;
   void receive_request(message_buffer* buf,
 	  const boost::system::error_code &err, size_t bytes_transferred);
