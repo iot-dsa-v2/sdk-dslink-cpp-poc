@@ -52,6 +52,8 @@ class client {
   void handle_ssl_handshake(const boost::system::error_code &err);
 #endif // USE_SSL
 
+  uint32_t num_sub;
+
   void compute_secret();
 
   int load_f0();
@@ -64,10 +66,14 @@ class client {
   void f3_received(const boost::system::error_code &err,
                    size_t bytes_transferred);
 
+  void send_sub_request();
+  void on_sub_request_sent(const boost::system::error_code &err, size_t bytes_transferred);
+  void read_sub_response(const boost::system::error_code &err, size_t bytes_transferred);
+
 public:
 #ifndef USE_SSL // don't USE_SSL
   client(boost::shared_ptr<boost::asio::io_service> io_service, char *host,
-         int port);
+         int port, int num_sub);
 #else // USE_SSL
   client(boost::shared_ptr<boost::asio::io_service> io_service, char *host,
          int port, boost::asio::ssl::context &context);

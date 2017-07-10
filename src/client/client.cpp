@@ -20,17 +20,17 @@
 #ifndef USE_SSL // don't USE_SSL
 
 client::client(boost::shared_ptr<boost::asio::io_service> io_service,
-               char *host, int port)
-    : sock(*io_service), strand(*io_service), ecdh("secp256k1") {
+  char *host, int port, int num_sub)
+  : sock(*io_service), strand(*io_service), ecdh("secp256k1"), num_sub(num_sub) {
 
 #else // USE_SSL
 
 client::client(boost::shared_ptr<boost::asio::io_service> io_service,
-               char *host, int port, boost::asio::ssl::context &context)
-    : sock(*io_service, context), strand(*io_service), ecdh("secp256k1") {
+  char *host, int port, boost::asio::ssl::context &context)
+  : sock(*io_service, context), strand(*io_service), ecdh("secp256k1") {
   sock.set_verify_mode(boost::asio::ssl::verify_peer);
   sock.set_verify_callback(
-      boost::bind(&client::verify_certificate, this, _1, _2));
+    boost::bind(&client::verify_certificate, this, _1, _2));
 
 #endif // USE_SSL
 
@@ -45,24 +45,24 @@ client::client(boost::shared_ptr<boost::asio::io_service> io_service,
 
   boost::asio::ip::tcp::resolver resolver(*io_service);
   boost::asio::ip::tcp::resolver::query query(
-      host, boost::lexical_cast<std::string>(port));
+    host, boost::lexical_cast<std::string>(port));
   boost::asio::ip::tcp::resolver::iterator iterator = resolver.resolve(query);
 
 #ifndef USE_SSL // don't USE_SSL
   boost::asio::ip::tcp::endpoint endpoint = *iterator;
 
   sock.async_connect(endpoint, boost::bind(&client::start_handshake, this,
-                                           boost::asio::placeholders::error));
+    boost::asio::placeholders::error));
 #else  // USE_SSL
   boost::asio::async_connect(sock.lowest_layer(), iterator,
-                             boost::bind(&client::handle_ssl_handshake, this,
-                                         boost::asio::placeholders::error));
+    boost::bind(&client::handle_ssl_handshake, this,
+      boost::asio::placeholders::error));
 #endif // USE_SSL
 }
 
 #ifdef USE_SSL
 bool client::verify_certificate(bool preverified,
-                                boost::asio::ssl::verify_context &ctx) {
+  boost::asio::ssl::verify_context &ctx) {
   // The verify callback can be used to check whether the certificate that is
   // being presented is valid for the peer. For example, RFC 2818 describes
   // the steps involved in doing this for HTTPS. Consult the OpenSSL
@@ -84,7 +84,7 @@ bool client::verify_certificate(bool preverified,
 void client::handle_ssl_handshake(const boost::system::error_code &err) {
   if (!err) {
     sock.async_handshake(boost::asio::ssl::stream_base::client,
-        boost::bind(&client::start_handshake, this, boost::asio::placeholders::error));
+      boost::bind(&client::start_handshake, this, boost::asio::placeholders::error));
   } else {
     std::stringstream ss;
     ss << "Error: " << err << std::endl;
@@ -101,9 +101,9 @@ void client::start_handshake(const boost::system::error_code &err) {
   } else {
     int size = load_f0();
     boost::asio::async_write(
-        sock, boost::asio::buffer(write_buf, size),
-        boost::bind(&client::f0_sent, this, boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+      sock, boost::asio::buffer(write_buf, size),
+      boost::bind(&client::f0_sent, this, boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
   }
 }
 
@@ -117,7 +117,7 @@ void checking(std::stringstream &ss, const char *message, bool saving = false) {
 }
 
 void client::f0_sent(const boost::system::error_code &err,
-                     size_t bytes_transferred) {
+  size_t bytes_transferred) {
   if (err) {
     std::stringstream ss;
     ss << "[clien::f0_sent] Error: " << err << std::endl;
@@ -125,18 +125,18 @@ void client::f0_sent(const boost::system::error_code &err,
   } else {
     std::stringstream ss;
     std::cout << "f0 sent, " << bytes_transferred << " bytes transferred"
-              << std::endl;
+      << std::endl;
     std::cout << ss.str();
     sock.async_read_some(
-        boost::asio::buffer(read_buf, max_length),
-        boost::bind(&client::f1_received, this,
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+      boost::asio::buffer(read_buf, max_length),
+      boost::bind(&client::f1_received, this,
+        boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
   }
 }
 
 void client::f1_received(const boost::system::error_code &err,
-                         size_t bytes_transferred) {
+  size_t bytes_transferred) {
   if (err) {
     std::stringstream ss;
     ss << "[client::f1_received] Error: " << err << std::endl;
@@ -145,7 +145,7 @@ void client::f1_received(const boost::system::error_code &err,
     std::stringstream ss;
     std::cout << std::endl;
     std::cout << "f1 received, " << bytes_transferred << " bytes transferred"
-              << std::endl;
+      << std::endl;
 
     byte *cur = read_buf;
 
@@ -220,9 +220,9 @@ void client::f1_received(const boost::system::error_code &err,
     static const auto wait_for_secret = [&]() {
       int f2_size = load_f2();
       boost::asio::async_write(
-          sock, boost::asio::buffer(write_buf, f2_size),
-          boost::bind(&client::f2_sent, this, boost::asio::placeholders::error,
-                      boost::asio::placeholders::bytes_transferred));
+        sock, boost::asio::buffer(write_buf, f2_size),
+        boost::bind(&client::f2_sent, this, boost::asio::placeholders::error,
+          boost::asio::placeholders::bytes_transferred));
     };
     strand.post(boost::bind(&client::compute_secret, this));
     strand.post(boost::bind<void>(wait_for_secret));
@@ -244,7 +244,7 @@ void client::compute_secret() {
 }
 
 void client::f2_sent(const boost::system::error_code &err,
-                     size_t bytes_transferred) {
+  size_t bytes_transferred) {
   std::cout << std::endl;
   if (err) {
     std::stringstream ss;
@@ -253,18 +253,18 @@ void client::f2_sent(const boost::system::error_code &err,
   } else {
     std::stringstream ss;
     ss << "f2 sent, " << bytes_transferred << " bytes transferred"
-              << std::endl;
+      << std::endl;
     std::cout << ss.str();
     sock.async_read_some(
-        boost::asio::buffer(read_buf, max_length),
-        boost::bind(&client::f3_received, this,
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+      boost::asio::buffer(read_buf, max_length),
+      boost::bind(&client::f3_received, this,
+        boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
   }
 }
 
 void client::f3_received(const boost::system::error_code &err,
-                         size_t bytes_transferred) {
+  size_t bytes_transferred) {
   std::cout << std::endl;
   if (err) {
     std::stringstream ss;
@@ -273,7 +273,7 @@ void client::f3_received(const boost::system::error_code &err,
   } else {
     std::stringstream ss;
     ss << "f3 received, " << bytes_transferred << " bytes transferred"
-              << std::endl;
+      << std::endl;
 
     byte *cur = read_buf;
 
@@ -348,6 +348,14 @@ void client::f3_received(const boost::system::error_code &err,
     ss << std::endl << "HANDSHAKE SUCCESSFUL" << std::endl;
 
     std::cout << ss.str();
+
+    sock.async_read_some(
+      boost::asio::buffer(read_buf, max_length),
+      boost::bind(&client::read_sub_response, this,
+        boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
+
+    send_sub_request();
   }
 }
 
@@ -484,3 +492,47 @@ int client::load_f2() {
 
   return total;
 }
+
+void client::send_sub_request() {
+  if (num_sub > 0) {
+
+    uint32_t total = 0;
+
+    /* total length placeholder */
+    for (int i = 0; i < sizeof(total); ++i)
+      write_buf[total++] = 0;
+
+    /* header length */
+    uint16_t header_length = 11;
+    std::memcpy(&write_buf[total], &header_length, sizeof(header_length));
+    total += sizeof(header_length);
+
+    /* message type */
+    write_buf[total++] = 0x01;
+
+    /* request id */
+    memcpy(&write_buf[total], &num_sub, sizeof(num_sub));
+    total += sizeof(num_sub);
+
+    /* write total length */
+    std::memcpy(write_buf, &total, sizeof(total));
+
+    // ignore dynamic headers for now
+
+    boost::asio::async_write(
+      sock, boost::asio::buffer(write_buf, total),
+      boost::bind(&client::on_sub_request_sent, this, boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
+
+    num_sub--;
+  }
+}
+void client::on_sub_request_sent(const boost::system::error_code &err, size_t bytes_transferred) {
+
+  // check if there is any more data to send
+  send_sub_request();
+}
+void client::read_sub_response(const boost::system::error_code &err, size_t bytes_transferred) {
+
+}
+

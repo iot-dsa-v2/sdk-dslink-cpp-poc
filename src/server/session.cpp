@@ -24,7 +24,7 @@ bool Session::send(boost::asio::const_buffer buffer) {
 }
 
 void Session::read_some() {
-	message_buffer& buf = buffer_factory.get_buffer();
+  message_buffer& buf = buffer_factory.get_buffer();
 
   connection->socket().async_read_some(
     buf.asio_buffer(),
@@ -38,10 +38,10 @@ void Session::read_some() {
 }
 
 void Session::receive_request(message_buffer* buf,
-	const boost::system::error_code &error,
+  const boost::system::error_code &error,
   size_t bytes_transferred) {
   if (!error) {
-    if (!parse_message(buf, bytes_transferred)) {
+    if (!parse_message(buf, bytes_transferred, 0)) {
       delete this;
       return;
     }
@@ -51,8 +51,8 @@ void Session::receive_request(message_buffer* buf,
   }
 }
 
-bool Session::parse_message(message_buffer* buf, size_t bytes_transferred) {
-  byte *cur = buf->data();
+bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_t offset) {
+  byte *cur = buf->data() + offset;
   uint32_t size;
   uint16_t header_size;
   byte method_type;
@@ -67,9 +67,15 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred) {
   cur += sizeof(rid);
   // ignore dynamic headers for now
 
-  if (bytes_transferred == size) {
+  if (bytes_transferred >= size + offset) {
     subscriptionIds.push_back(rid);
     start_timer();
+    std::cout << "receive request\n";
+    if (bytes_transferred > size + offset) {
+      // parse the rest of the data
+      // this is only safe for the poc because of small message size
+      return parse_message(buf, bytes_transferred, offset + size);
+    }
     return true;
   }
   return false;

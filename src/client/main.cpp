@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     }
     
 #ifndef USE_SSL // don't USE_SSL
-    client c(io_service, host, port);
+    client c(io_service, host, port, 4);
 #else // USE_SSL
     boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
     ctx.load_verify_file("certificate.pem");
