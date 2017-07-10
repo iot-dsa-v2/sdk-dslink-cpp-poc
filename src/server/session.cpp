@@ -79,8 +79,8 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
   if (bytes_transferred >= size + offset) {
     auto add_id = [&](uint32_t id) {
       subscriptionIds.push_back(id);
-    }
-    connection->strand.push(boost::bind<void>(add_id, rid));
+    };
+    connection->strand.post(boost::bind<void>(add_id, rid));
 
     std::cout << "receive request\n";
     if (bytes_transferred > size + offset) {
@@ -163,8 +163,8 @@ bool Session::on_timer(const boost::system::error_code &err) {
       for (int id : subscriptionIds) {
         send_response(id);
       }
-    }
-    connection->strand.push(boost::bind<void>(send_responses));
+    };
+    connection->strand.post(boost::bind<void>(send_responses));
   }
 
   return true;

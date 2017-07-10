@@ -20,7 +20,6 @@ private:
 #else  // don't USE_SSL
   boost::asio::ip::tcp::socket sock;
 #endif // USE_SSL
-  boost::asio::io_service::strand strand;
 
   dsa::message::buffer_factory buffer_factory;
 
@@ -61,6 +60,8 @@ private:
     size_t bytes_transferred);
 
 public:
+  boost::asio::io_service::strand strand;
+
   Server& serv;
 #ifdef USE_SSL
   Connection(Server &s, boost::shared_ptr<boost::asio::io_service> io_service,
