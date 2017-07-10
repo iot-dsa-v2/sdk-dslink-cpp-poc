@@ -3,9 +3,12 @@
 #include <map>
 #include <vector>
 #include <array>
+#include <atomic>
 #include <boost/asio.hpp>
 
 #include "message.hpp"
+
+typedef uint8_t byte;
 
 using namespace dsa::message;
 
@@ -30,5 +33,10 @@ private:
   std::unique_ptr<boost::asio::deadline_timer> timer;
   void start_timer();
   bool on_timer(const boost::system::error_code &err);
+
+  std::atomic_int sent_count;
+
+  void send_response(uint32_t rid);
+  void send_done(byte * buf, const boost::system::error_code & error, size_t bytes_transferred);
 };
 

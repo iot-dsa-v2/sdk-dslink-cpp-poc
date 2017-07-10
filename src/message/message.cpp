@@ -32,7 +32,6 @@ unsigned char* buffer_factory::buffer::data() {
 			
 void buffer_factory::buffer::recycle() {
 	factory.free_buffers.push_back(id);
-	std::cout << "recycle: " << factory.free_buffers.size() << std::endl;
 }
 
 boost::asio::mutable_buffers_1 buffer_factory::buffer::asio_buffer() {
@@ -44,7 +43,6 @@ boost::asio::mutable_buffers_1 buffer_factory::buffer::asio_buffer(int size) {
 }
 
 buffer_factory::buffer& buffer_factory::get_buffer() {
-	std::cout << "get: " << free_buffers.size() << std::endl;
 	if (free_buffers.empty()) {
 		int key = buffer_count++;
 		buffers[key] = std::unique_ptr<buffer>(new buffer(*this, key));

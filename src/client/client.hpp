@@ -72,10 +72,10 @@ class client {
 
 public:
 #ifndef USE_SSL // don't USE_SSL
-  client(boost::shared_ptr<boost::asio::io_service> io_service, char *host,
+  client(boost::shared_ptr<boost::asio::io_service> io_service, const char *host,
          int port, int num_sub);
 #else // USE_SSL
-  client(boost::shared_ptr<boost::asio::io_service> io_service, char *host,
+  client(boost::shared_ptr<boost::asio::io_service> io_service, const char *host,
          int port, boost::asio::ssl::context &context);
 #endif // USE_SSL
 

@@ -8,15 +8,19 @@
 
 using namespace dsa::message;
 
+
+
 Session::Session(Connection * connection)
-  : connection(connection) {
+  : connection(connection), sent_count(0) {
   //async_read(connection->socket(), connection->get_read_buffer(), boost::bind(&Session::receive_request, this,
   //  boost::asio::placeholders::error,
   //  boost::asio::placeholders::bytes_transferred));
   read_some();
+  start_timer();
 }
 
 Session::~Session() {
+  timer.reset();
   delete connection;
 }
 bool Session::send(boost::asio::const_buffer buffer) {
@@ -57,6 +61,7 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
   uint16_t header_size;
   byte method_type;
   uint32_t rid;
+
   memcpy(&size, cur, sizeof(size));
   cur += sizeof(size);
   memcpy(&header_size, cur, sizeof(header_size));
@@ -69,7 +74,6 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
 
   if (bytes_transferred >= size + offset) {
     subscriptionIds.push_back(rid);
-    start_timer();
     std::cout << "receive request\n";
     if (bytes_transferred > size + offset) {
       // parse the rest of the data
@@ -82,18 +86,78 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
 }
 
 void Session::start_timer() {
-  static boost::posix_time::milliseconds interval(100);
+  static boost::posix_time::milliseconds interval(10);
 
-  if (timer.get() == nullptr) {
-    timer.reset(new boost::asio::deadline_timer(*(connection->serv.io_service), interval));
-    (*timer).async_wait(boost::bind(
-      &Session::on_timer,
-      this,
-      boost::asio::placeholders::error
-    ));
-  }
+  timer.reset(new boost::asio::deadline_timer(*(connection->serv.io_service), interval));
+  timer->async_wait(boost::bind(
+    &Session::on_timer,
+    this,
+    boost::asio::placeholders::error
+  ));
 }
+
+void Session::send_response(uint32_t rid) {
+  byte * buf = new byte[1000];
+  uint32_t total = 0;
+
+  /* total length placeholder */
+  for (int i = 0; i < sizeof(total); ++i)
+    buf[total++] = 0;
+
+  /* header length */
+  uint16_t header_length = 11;
+  std::memcpy(&buf[total], &header_length, sizeof(header_length));
+  total += sizeof(header_length);
+
+  /* message type */
+  buf[total++] = 0x81;
+
+  /* request id */
+  memcpy(&buf[total], &rid, sizeof(rid));
+  total += sizeof(rid);
+
+  char message[] = "sample message";
+  memcpy(&buf[total], message, sizeof(message));
+  total += sizeof(message);
+
+  /* write total length */
+  std::memcpy(buf, &total, sizeof(total));
+
+  // ignore dynamic headers for now
+  sent_count++;
+
+  boost::asio::async_write(
+    connection->socket(), boost::asio::buffer(buf, total), 
+    boost::bind(&Session::send_done, this, buf,
+      boost::asio::placeholders::error,
+      boost::asio::placeholders::bytes_transferred));
+}
+
+void Session::send_done(byte * buf, const boost::system::error_code & error,
+  size_t bytes_transferred) {
+  delete[] buf;
+  std::stringstream ss;
+  if (!error) {
+    ss << "transferred: " << bytes_transferred << " bytes" << std::endl;
+    sent_count--;
+  } else {
+    ss << "error: " << error << std::endl;
+  }
+  std::cout << ss.str();
+}
+
 bool Session::on_timer(const boost::system::error_code &err) {
+  if (err) {
+    return false;
+  }
+
   start_timer();
+
+  if (sent_count < subscriptionIds.size()) {
+    for (int id : subscriptionIds) {
+      send_response(id);
+    }
+  }
+
   return true;
 }

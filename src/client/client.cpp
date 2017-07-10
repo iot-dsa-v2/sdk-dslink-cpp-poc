@@ -20,13 +20,13 @@
 #ifndef USE_SSL // don't USE_SSL
 
 client::client(boost::shared_ptr<boost::asio::io_service> io_service,
-  char *host, int port, int num_sub)
+  const char *host, int port, int num_sub)
   : sock(*io_service), strand(*io_service), ecdh("secp256k1"), num_sub(num_sub) {
 
 #else // USE_SSL
 
 client::client(boost::shared_ptr<boost::asio::io_service> io_service,
-  char *host, int port, boost::asio::ssl::context &context)
+  const char *host, int port, boost::asio::ssl::context &context)
   : sock(*io_service, context), strand(*io_service), ecdh("secp256k1") {
   sock.set_verify_mode(boost::asio::ssl::verify_peer);
   sock.set_verify_callback(
@@ -527,17 +527,26 @@ void client::send_sub_request() {
     num_sub--;
   }
 }
-void client::on_sub_request_sent(const boost::system::error_code &err, size_t bytes_transferred) {
 
+void client::on_sub_request_sent(const boost::system::error_code &err, size_t bytes_transferred) {
   // check if there is any more data to send
   send_sub_request();
 }
 void client::read_sub_response(const boost::system::error_code &err, size_t bytes_transferred) {
-  // ignore the response, use a read loop
-  sock.async_read_some(
-    boost::asio::buffer(read_buf, max_length),
-    boost::bind(&client::read_sub_response, this,
-      boost::asio::placeholders::error,
-      boost::asio::placeholders::bytes_transferred));
+  if (!err) {
+    std::stringstream ss;
+    ss << "subscription response: " << bytes_transferred << "bytes received" << std::endl;
+    std::cout << ss.str();
+    // ignore the response, use a read loop
+    sock.async_read_some(
+      boost::asio::buffer(read_buf, max_length),
+      boost::bind(&client::read_sub_response, this,
+        boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
+  } else {
+    std::stringstream ss;
+    ss << "error: " << err << std::endl;
+    std::cout << ss.str();
+  }
 }
 
