@@ -77,7 +77,11 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
   // ignore dynamic headers for now
 
   if (bytes_transferred >= size + offset) {
-    subscriptionIds.push_back(rid);
+    auto add_id = [&](uint32_t id) {
+      subscriptionIds.push_back(id);
+    }
+    connection->strand.push(boost::bind<void>(add_id, rid));
+
     std::cout << "receive request\n";
     if (bytes_transferred > size + offset) {
       // parse the rest of the data
@@ -155,9 +159,12 @@ bool Session::on_timer(const boost::system::error_code &err) {
   start_timer();
 
   if (sent_count < subscriptionIds.size()) {
-    for (int id : subscriptionIds) {
-      send_response(id);
+    auto send_responses = [&]() {
+      for (int id : subscriptionIds) {
+        send_response(id);
+      }
     }
+    connection->strand.push(boost::bind<void>(send_responses));
   }
 
   return true;
