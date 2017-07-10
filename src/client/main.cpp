@@ -55,8 +55,7 @@ int main(int argc, char *argv[]) {
     if (argc < 3) {
       host = "127.0.0.1";
       port = 8080;
-    }
-    else {
+    } else {
       host = argv[1];
       port = std::atoi(argv[2]);
     }
