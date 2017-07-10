@@ -20,8 +20,8 @@
 #ifndef USE_SSL // don't USE_SSL
 
 client::client(boost::shared_ptr<boost::asio::io_service> io_service,
-               char *host, int port)
-    : sock(*io_service), strand(*io_service), ecdh("secp256k1") {
+               char *host, int port, int num_sub)
+    : sock(*io_service), strand(*io_service), ecdh("secp256k1"), num_sub(num_sub){
 
 #else // USE_SSL
 
@@ -348,6 +348,14 @@ void client::f3_received(const boost::system::error_code &err,
     ss << std::endl << "HANDSHAKE SUCCESSFUL" << std::endl;
 
     std::cout << ss.str();
+
+    sock.async_read_some(
+      boost::asio::buffer(read_buf, max_length),
+      boost::bind(&client::read_sub_response, this,
+        boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
+
+    send_sub_request();
   }
 }
 
@@ -484,3 +492,47 @@ int client::load_f2() {
 
   return total;
 }
+
+void client::send_sub_request() {
+  if (num_sub > 0) {
+
+    uint32_t total = 0;
+
+    /* total length placeholder */
+    for (int i = 0; i < sizeof(total); ++i)
+      write_buf[total++] = 0;
+
+    /* header length */
+    uint16_t header_length = 11;
+    std::memcpy(&write_buf[total], &header_length, sizeof(header_length));
+    total += sizeof(header_length);
+
+    /* message type */
+    write_buf[total++] = 0x01;
+
+    /* request id */
+    memcpy(&write_buf[total], &num_sub, sizeof(num_sub));
+    total += sizeof(num_sub);
+
+    /* write total length */
+    std::memcpy(write_buf, &total, sizeof(total));
+
+    // ignore dynamic headers for now
+
+    boost::asio::async_write(
+      sock, boost::asio::buffer(write_buf, total),
+      boost::bind(&client::on_sub_request_sent, this, boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
+
+    num_sub--;
+  }
+}
+void client::on_sub_request_sent(const boost::system::error_code &err, size_t bytes_transferred) {
+
+  // check if there is any more data to send
+  send_sub_request();
+}
+void client::read_sub_response(const boost::system::error_code &err, size_t bytes_transferred) {
+
+}
+

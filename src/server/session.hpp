@@ -25,7 +25,7 @@ private:
   void receive_request(message_buffer* buf,
 	  const boost::system::error_code &err, size_t bytes_transferred);
   void read_some();
-  bool parse_message(message_buffer* buf, size_t bytes_transferred);
+  bool parse_message(message_buffer* buf, size_t bytes_transferred, size_t offset);
 
   std::unique_ptr<boost::asio::deadline_timer> timer;
   void start_timer();
