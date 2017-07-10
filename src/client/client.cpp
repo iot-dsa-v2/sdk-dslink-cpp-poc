@@ -533,6 +533,11 @@ void client::on_sub_request_sent(const boost::system::error_code &err, size_t by
   send_sub_request();
 }
 void client::read_sub_response(const boost::system::error_code &err, size_t bytes_transferred) {
-
+  // ignore the response, use a read loop
+  sock.async_read_some(
+    boost::asio::buffer(read_buf, max_length),
+    boost::bind(&client::read_sub_response, this,
+      boost::asio::placeholders::error,
+      boost::asio::placeholders::bytes_transferred));
 }
 
