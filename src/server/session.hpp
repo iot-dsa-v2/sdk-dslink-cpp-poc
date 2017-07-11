@@ -4,10 +4,8 @@
 #include <vector>
 #include <array>
 #include <atomic>
+#include <memory>
 #include <boost/asio.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 #include "message.hpp"
 
 typedef uint8_t byte;
@@ -16,7 +14,7 @@ using namespace dsa::message;
 
 class Connection;
 
-class Session : public boost::enable_shared_from_this<Session> {
+class Session : public std::enable_shared_from_this<Session> {
 public:
   Session(Connection *);
   ~Session();
