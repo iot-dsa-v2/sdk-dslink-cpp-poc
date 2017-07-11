@@ -23,6 +23,9 @@ public:
   bool send(boost::asio::const_buffer);
 
 private:
+
+  friend Connection;
+
   Connection * connection;
   std::atomic_bool should_stop;
   message_buffer buf;
@@ -41,5 +44,7 @@ private:
 
   void send_response(uint32_t rid);
   void send_done(byte * buf, const boost::system::error_code & error, size_t bytes_transferred);
+
+  void start();
 };
 

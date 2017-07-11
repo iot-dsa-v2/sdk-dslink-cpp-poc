@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -11,9 +12,12 @@
 using namespace dsa::message;
 
 class Server;
+class Session;
 
 class Connection {
 private:
+
+  boost::shared_ptr<Session> session;
 
   message_buffer read_buf;
   message_buffer write_buf;

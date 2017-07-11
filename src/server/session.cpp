@@ -11,15 +11,17 @@ using namespace dsa::message;
 Session::Session(Connection * connection)
   : connection(connection), sent_count(0), should_stop(false),
     timer(new boost::asio::deadline_timer(*(connection->serv.io_service))) {
-  read_some();
-
-  start_timer();
 }
 
 Session::~Session() {
   std::cout << "~Session\n";
   timer->cancel();
   delete connection;
+}
+
+void Session::start() {
+  read_some();
+  start_timer();
 }
 
 bool Session::send(boost::asio::const_buffer buffer) {

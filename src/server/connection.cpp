@@ -363,8 +363,8 @@ void Connection::f3_sent(message_buffer* buf,
     ss << std::endl << "HANDSHAKE SUCCESSFUL" << std::endl;
     std::cout << ss.str();
 
-    std::make_shared<Session>(this);
-
+    auto session = std::make_shared<Session>(this);
+    session->start();
   }
 }
 
