@@ -13,44 +13,25 @@
 
 namespace dsa {
 namespace message {
-/****** BUFFER FACTORY ******/
-class buffer_factory {
-public:
-	enum { max_length = 4096 };
 
-	class buffer {
-	private:
-		std::array<unsigned char, max_length> buf;
-		buffer_factory &factory;
-		int id;
-
-	public:
-		buffer(buffer_factory &f, int key);
-
-		operator std::array<unsigned char, max_length>() { return buf; }
-		inline unsigned char& operator[] (int idx) { return buf[idx]; }
-		boost::asio::mutable_buffers_1 asio_buffer();
-		boost::asio::mutable_buffers_1 asio_buffer(int size);
-
-		unsigned char *data();
-
-		int max_size() const { return buf.max_size(); }
-
-		void recycle();
-	};
-
-	buffer_factory();
-
-	buffer& get_buffer();
-
+class message_buffer {
 private:
+  enum { max_length = 4096 };
+  std::array<unsigned char, max_length> buf;
 
-	std::atomic_int buffer_count;
-	std::map<int, std::unique_ptr<buffer>> buffers;
-	std::vector<int> free_buffers;
+public:
+
+  operator std::array<unsigned char, max_length>() { return buf; }
+  inline unsigned char& operator[] (int idx) { return buf[idx]; }
+  boost::asio::mutable_buffers_1 asio_buffer();
+  boost::asio::mutable_buffers_1 asio_buffer(int size);
+
+  unsigned char *data();
+
+  int max_size() const { return buf.max_size(); }
+
+  void recycle();
 };
-
-typedef buffer_factory::buffer message_buffer;
 
 enum {
   max_message_length = 4096

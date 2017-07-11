@@ -8,37 +8,30 @@
 
 using namespace dsa::message;
 
-
-
 Session::Session(Connection * connection)
-  : connection(connection), sent_count(0) {
-  //async_read(connection->socket(), connection->get_read_buffer(), boost::bind(&Session::receive_request, this,
-  //  boost::asio::placeholders::error,
-  //  boost::asio::placeholders::bytes_transferred));
+  : connection(connection), sent_count(0), should_stop(false),
+    timer(new boost::asio::deadline_timer(*(connection->serv.io_service))) {
   read_some();
-
-  static boost::posix_time::milliseconds interval(10);
-  timer.reset(new boost::asio::deadline_timer(*(connection->serv.io_service), interval));
 
   start_timer();
 }
 
 Session::~Session() {
+  std::cout << "~Session\n";
   timer->cancel();
   delete connection;
 }
+
 bool Session::send(boost::asio::const_buffer buffer) {
   return true;
 }
 
 void Session::read_some() {
-  message_buffer& buf = buffer_factory.get_buffer();
-
   connection->socket().async_read_some(
     buf.asio_buffer(),
     boost::bind(
       &Session::receive_request,
-      this, &buf,
+      shared_from_this(), &buf,
       boost::asio::placeholders::error,
       boost::asio::placeholders::bytes_transferred
     )
@@ -50,12 +43,14 @@ void Session::receive_request(message_buffer* buf,
   size_t bytes_transferred) {
   if (!error) {
     if (!parse_message(buf, bytes_transferred, 0)) {
-      delete this;
+      // delete this;
+      should_stop = true;
       return;
     }
     read_some();
   } else {
-    delete this;
+    should_stop = true;
+    // delete this;
   }
 }
 
@@ -76,13 +71,13 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
   cur += sizeof(rid);
   // ignore dynamic headers for now
 
+  // std::cout << (std::to_string(rid) + "\n");
+
   if (bytes_transferred >= size + offset) {
     auto add_id = [&](uint32_t id) {
       subscriptionIds.push_back(id);
     };
     connection->strand.post(boost::bind<void>(add_id, rid));
-
-    std::cout << "receive request\n";
     if (bytes_transferred > size + offset) {
       // parse the rest of the data
       // this is only safe for the poc because of small message size
@@ -94,11 +89,14 @@ bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_
 }
 
 void Session::start_timer() {
-  timer->async_wait(boost::bind(
-    &Session::on_timer,
-    this,
-    boost::asio::placeholders::error
-  ));
+  if (!should_stop) {
+    timer->expires_from_now(boost::posix_time::seconds(1));
+    timer->async_wait(boost::bind(
+      &Session::on_timer,
+      shared_from_this(),
+      boost::asio::placeholders::error
+    ));
+  }
 }
 
 void Session::send_response(uint32_t rid) {
@@ -121,9 +119,9 @@ void Session::send_response(uint32_t rid) {
   memcpy(&buf[total], &rid, sizeof(rid));
   total += sizeof(rid);
 
-  char message[] = "sample message";
-  memcpy(&buf[total], message, sizeof(message));
-  total += sizeof(message);
+  std::string message = std::to_string(rid);
+  memcpy(&buf[total], message.c_str(), message.size());
+  total += message.size();
 
   /* write total length */
   std::memcpy(buf, &total, sizeof(total));
@@ -133,7 +131,7 @@ void Session::send_response(uint32_t rid) {
 
   boost::asio::async_write(
     connection->socket(), boost::asio::buffer(buf, total), 
-    boost::bind(&Session::send_done, this, buf,
+    boost::bind(&Session::send_done, shared_from_this(), buf,
       boost::asio::placeholders::error,
       boost::asio::placeholders::bytes_transferred));
 }
@@ -143,7 +141,7 @@ void Session::send_done(byte * buf, const boost::system::error_code & error,
   delete[] buf;
   std::stringstream ss;
   if (!error) {
-    ss << "transferred: " << bytes_transferred << " bytes" << std::endl;
+    // ss << "transferred: " << bytes_transferred << " bytes" << std::endl;
     sent_count--;
   } else {
     ss << "error: " << error << std::endl;
@@ -156,15 +154,17 @@ bool Session::on_timer(const boost::system::error_code &err) {
     return false;
   }
 
-  start_timer();
+  if (!should_stop) {
+    start_timer();
 
-  if (sent_count < subscriptionIds.size()) {
-    auto send_responses = [&]() {
-      for (int id : subscriptionIds) {
-        send_response(id);
-      }
-    };
-    connection->strand.post(boost::bind<void>(send_responses));
+    if (sent_count < subscriptionIds.size()) {
+      auto send_responses = [&]() {
+        for (int id : subscriptionIds) {
+          send_response(id);
+        }
+      };
+      connection->strand.post(boost::bind<void>(send_responses));
+    }
   }
 
   return true;

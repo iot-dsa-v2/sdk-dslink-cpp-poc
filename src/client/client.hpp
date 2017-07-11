@@ -2,6 +2,7 @@
 #define CLIENT_COMMON_HPP
 
 #include <array>
+#include <atomic>
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
@@ -52,7 +53,7 @@ class client {
   void handle_ssl_handshake(const boost::system::error_code &err);
 #endif // USE_SSL
 
-  uint32_t num_sub;
+  std::atomic_int num_sub;
 
   void compute_secret();
 

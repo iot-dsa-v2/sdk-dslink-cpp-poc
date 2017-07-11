@@ -39,7 +39,7 @@ Server::Server(boost::shared_ptr<boost::asio::io_service> io_service,
   context.use_certificate_chain_file("certificate.pem");
   context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
 
-  connection *new_connection = new connection(*this, io_service, context);
+  Connection *new_connection = new Connection(*this, io_service, context);
 #else  // don't USE_SSL
   Connection *new_connection = new Connection(*this, io_service);
 #endif // USE_SSL

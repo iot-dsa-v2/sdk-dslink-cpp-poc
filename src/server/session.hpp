@@ -5,6 +5,8 @@
 #include <array>
 #include <atomic>
 #include <boost/asio.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 #include "message.hpp"
 
@@ -14,16 +16,17 @@ using namespace dsa::message;
 
 class Connection;
 
-class Session {
-  Connection * connection;
-
+class Session : public boost::enable_shared_from_this<Session> {
 public:
   Session(Connection *);
   ~Session();
   bool send(boost::asio::const_buffer);
 
 private:
-	dsa::message::buffer_factory buffer_factory;
+  Connection * connection;
+  std::atomic_bool should_stop;
+  message_buffer buf;
+
   std::vector<uint32_t> subscriptionIds;
   void receive_request(message_buffer* buf,
 	  const boost::system::error_code &err, size_t bytes_transferred);

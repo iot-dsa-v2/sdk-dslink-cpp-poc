@@ -14,14 +14,15 @@ class Server;
 
 class Connection {
 private:
+
+  message_buffer read_buf;
+  message_buffer write_buf;
   
 #ifdef USE_SSL
   ssl_socket sock;
 #else  // don't USE_SSL
   boost::asio::ip::tcp::socket sock;
 #endif // USE_SSL
-
-  dsa::message::buffer_factory buffer_factory;
 
   std::vector<byte> shared_secret;
   std::vector<byte> client_dsid;
@@ -77,8 +78,6 @@ public:
 #endif // USE_SSL
 
   enum { max_length = 512, f0_bytes_wo_dsid = 112 };
-  byte write_buf[max_length];
-  byte read_buf[max_length];
 
   ~Connection();
 

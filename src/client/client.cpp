@@ -350,7 +350,7 @@ void client::f3_received(const boost::system::error_code &err,
     std::cout << ss.str();
 
     sock.async_read_some(
-      boost::asio::buffer(read_buf, max_length),
+      boost::asio::buffer(read_buf, 11),
       boost::bind(&client::read_sub_response, this,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
@@ -534,12 +534,19 @@ void client::on_sub_request_sent(const boost::system::error_code &err, size_t by
 }
 void client::read_sub_response(const boost::system::error_code &err, size_t bytes_transferred) {
   if (!err) {
+    uint32_t size;
+    std::memcpy(&size, read_buf, sizeof(size));
+
+    size_t message_size = sock.read_some(boost::asio::buffer(read_buf, size - 11));
+    read_buf[message_size] = '\0';
+
     std::stringstream ss;
-    ss << "subscription response: " << bytes_transferred << "bytes received" << std::endl;
-    std::cout << ss.str();
+    ss << "subscription response for rid = " << read_buf << std::endl;
+    // std::cout << ss.str();
+
     // ignore the response, use a read loop
     sock.async_read_some(
-      boost::asio::buffer(read_buf, max_length),
+      boost::asio::buffer(read_buf, 11),
       boost::bind(&client::read_sub_response, this,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));

@@ -1,12 +1,13 @@
 #include "connection.hpp"
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
 #include <cstring>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <memory>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 
 #include "message.hpp"
 #include "server.hpp"
@@ -61,10 +62,9 @@ void Connection::start() {
 void Connection::handle_ssl_handshake(
   const boost::system::error_code &error) {
   if (!error) {
-    message_buffer &buf = buffer_factory.get_buffer();
     sock.async_read_some(
-      buf.asio_buffer(),
-      boost::bind(&Connection::f0_received, this, buf,
+      read_buf.asio_buffer(),
+      boost::bind(&Connection::f0_received, this, &read_buf,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
   } else {
@@ -82,10 +82,9 @@ ssl_socket::lowest_layer_type &Connection::socket() {
 }
 #else  // don't USE_SSL
 void Connection::start() {
-  message_buffer &buf = buffer_factory.get_buffer();
   sock.async_read_some(
-    boost::asio::buffer(buf.data(), buf.max_size()),
-    boost::bind(&Connection::f0_received, this, &buf,
+    read_buf.asio_buffer(),
+    boost::bind(&Connection::f0_received, this, &read_buf,
       boost::asio::placeholders::error,
       boost::asio::placeholders::bytes_transferred));
 }
@@ -204,10 +203,10 @@ void Connection::f0_received(message_buffer* buf,
 
     strand.post(boost::bind(&Connection::compute_secret, this));
 
-    int f1_size = load_f1(buf);
+    int f1_size = load_f1(&write_buf);
     boost::asio::async_write(
-      sock, buf->asio_buffer(f1_size),
-      boost::bind(&Connection::f1_sent, this, buf,
+      sock, write_buf.asio_buffer(f1_size),
+      boost::bind(&Connection::f1_sent, this, &write_buf,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
   }
@@ -249,8 +248,8 @@ void Connection::f1_sent(message_buffer* buf,
         bytes_transferred));
     };
     sock.async_read_some(
-      buf->asio_buffer(),
-      boost::bind<void>(wait_for_secret, buf, 
+      read_buf.asio_buffer(),
+      boost::bind<void>(wait_for_secret, &read_buf, 
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
   }
@@ -340,10 +339,10 @@ void Connection::f2_received(message_buffer *buf,
     ss << "done" << std::endl;
     std::cout << ss.str();
 
-    int f3_size = load_f3(buf);
+    int f3_size = load_f3(&write_buf);
     boost::asio::async_write(
-      sock, buf->asio_buffer(f3_size),
-      boost::bind(&Connection::f3_sent, this, buf,
+      sock, write_buf.asio_buffer(f3_size),
+      boost::bind(&Connection::f3_sent, this, &write_buf,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
   }
@@ -364,7 +363,7 @@ void Connection::f3_sent(message_buffer* buf,
     ss << std::endl << "HANDSHAKE SUCCESSFUL" << std::endl;
     std::cout << ss.str();
 
-    new Session(this);
+    std::make_shared<Session>(this);
 
   }
 }
