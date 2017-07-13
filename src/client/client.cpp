@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "crypto.hpp"
+#include "crypto.h"
 
 #define END_IF(X)                                                              \
   if (X) {                                                                     \
@@ -38,7 +38,8 @@ client::client(boost::shared_ptr<boost::asio::io_service> io_service,
 
   dsa::hash hash("sha256");
   public_key = ecdh.get_public_key();
-  hash.update(public_key);
+  std::cout << *public_key << std::endl;
+  hash.update(*public_key);
   dsid = "mlink-" + dsa::base64url(hash.digest_base64());
 
   salt = dsa::gen_salt(32);
@@ -147,7 +148,7 @@ void client::f1_received(const boost::system::error_code &err,
     std::cout << "f1 received, " << bytes_transferred << " bytes transferred"
       << std::endl;
 
-    byte *cur = read_buf;
+    uint8_t *cur = read_buf;
 
     /* check to make sure message size matches */
     checking(ss, "message size");
@@ -167,7 +168,7 @@ void client::f1_received(const boost::system::error_code &err,
 
     /* check to make sure message type is correct */
     checking(ss, "message type");
-    byte message_type;
+    uint8_t message_type;
     std::memcpy(&message_type, cur, sizeof(message_type));
     END_IF(message_type != 0xf1);
     cur += 1;
@@ -183,7 +184,7 @@ void client::f1_received(const boost::system::error_code &err,
 
     /* check DSID length */
     checking(ss, "DSID length");
-    byte dsid_length;
+    uint8_t dsid_length;
     std::memcpy(&dsid_length, cur, sizeof(dsid_length));
     END_IF(dsid_length > 60 || dsid_length < 20);
     cur += sizeof(dsid_length);
@@ -191,27 +192,24 @@ void client::f1_received(const boost::system::error_code &err,
 
     /* save DSID */
     checking(ss, "broker DSID", true);
-    byte new_dsid[1000];
-    std::memcpy(new_dsid, cur, dsid_length);
+    broker_dsid = std::make_shared<Buffer>(dsid_length);
+    broker_dsid->assign(cur, dsid_length);
     cur += dsid_length;
-    broker_dsid.assign(new_dsid, new_dsid + dsid_length);
     // END_IF(cur > buf + message_size);
     ss << "done" << std::endl;
 
     /* save public key */
     checking(ss, "broker public key", true);
-    byte tmp_pub[65];
-    std::memcpy(tmp_pub, cur, sizeof(tmp_pub));
-    cur += sizeof(tmp_pub);
-    broker_public.assign(tmp_pub, tmp_pub + sizeof(tmp_pub));
+    broker_public = std::make_shared<Buffer>(65);
+    broker_public->assign(cur, broker_public->capacity());
+    cur += broker_public->capacity();
     ss << "done" << std::endl;
 
     /* save broker salt */
     checking(ss, "broker salt", true);
-    byte tmp_salt[32];
-    std::memcpy(tmp_salt, cur, sizeof(tmp_salt));
-    cur += sizeof(broker_salt);
-    broker_salt.assign(tmp_salt, tmp_salt + sizeof(tmp_salt));
+    broker_salt = std::make_shared<Buffer>(32);
+    broker_salt->assign(cur, broker_salt->capacity());
+    cur += broker_salt->capacity();
     // END_IF(cur != buf + message_size);
     ss << "done" << std::endl;
 
@@ -230,16 +228,16 @@ void client::f1_received(const boost::system::error_code &err,
 }
 
 void client::compute_secret() {
-  shared_secret = ecdh.compute_secret(broker_public);
+  shared_secret = ecdh.compute_secret(*broker_public);
 
   /* compute client auth */
-  dsa::hmac hmac("sha256", shared_secret);
-  hmac.update(broker_salt);
+  dsa::hmac hmac("sha256", *shared_secret);
+  hmac.update(*broker_salt);
   auth = hmac.digest();
 
   /* compute broker auth */
-  dsa::hmac broker_hmac("sha256", shared_secret);
-  broker_hmac.update(salt);
+  dsa::hmac broker_hmac("sha256", *shared_secret);
+  broker_hmac.update(*salt);
   broker_auth = broker_hmac.digest();
 }
 
@@ -275,7 +273,7 @@ void client::f3_received(const boost::system::error_code &err,
     ss << "f3 received, " << bytes_transferred << " bytes transferred"
       << std::endl;
 
-    byte *cur = read_buf;
+    uint8_t *cur = read_buf;
 
     /* check to make sure message size matches */
     checking(ss, "message size");
@@ -295,7 +293,7 @@ void client::f3_received(const boost::system::error_code &err,
 
     /* check to make sure message type is correct */
     checking(ss, "message type");
-    byte message_type;
+    uint8_t message_type;
     std::memcpy(&message_type, cur, sizeof(message_type));
     END_IF(message_type != 0xf3);
     cur += sizeof(message_type);
@@ -318,10 +316,9 @@ void client::f3_received(const boost::system::error_code &err,
 
     /* save session id */
     checking(ss, "session id", true);
-    byte session[1000];
-    std::memcpy(session, cur, session_id_length);
+    session_id = std::make_shared<Buffer>(session_id_length);
+    session_id->assign(cur, session_id_length);
     cur += session_id_length;
-    session_id.assign(session, session + session_id_length);
     ss << "done" << std::endl;
 
     /* check path length */
@@ -333,16 +330,16 @@ void client::f3_received(const boost::system::error_code &err,
 
     /* save path */
     checking(ss, "path", true);
-    byte tmp_path[1000];
-    std::memcpy(tmp_path, cur, path_length);
+    path = std::make_shared<Buffer>(path_length);
+    path->assign(cur, path_length);
     cur += path_length;
-    path.assign(tmp_path, tmp_path + path_length);
     ss << "done" << std::endl;
 
     /* check broker auth */
     checking(ss, "broker auth");
+    uint8_t *auth_ptr = broker_auth->data();
     for (int i = 0; i < 32; ++i)
-      END_IF(*(cur++) != broker_auth[i]);
+      END_IF(cur[i] != auth_ptr[i]);
     ss << "done" << std::endl;
 
     ss << std::endl << "HANDSHAKE SUCCESSFUL" << std::endl;
@@ -359,15 +356,15 @@ void client::f3_received(const boost::system::error_code &err,
   }
 }
 
-void write_LE(byte *buf, void *data, int len) {
+void write_LE(uint8_t *buf, void *data, int len) {
   for (int i = 0; i < len; ++i) {
-    buf[i] = ((byte *)data)[len - i - 1];
+    buf[i] = ((uint8_t *)data)[len - i - 1];
   }
 }
 
-void load_LE(byte *buf, void *data, int len) {
+void load_LE(uint8_t *buf, void *data, int len) {
   for (int i = 0; i < len; ++i) {
-    ((byte *)data)[i] = buf[len - i - 1];
+    ((uint8_t *)data)[i] = buf[len - i - 1];
   }
 }
 
@@ -376,16 +373,16 @@ void load_LE(byte *buf, void *data, int len) {
  * HEADER
  * total length :: Uint32 in LE                            :: 4 bytes
  * header length :: Uint16 in LE                           :: 2 bytes
- * handshake message type :: f0                            :: 1 byte
+ * handshake message type :: f0                            :: 1 uint8_t
  * request id :: 0 for handshake messages                  :: 4 bytes
  *
  * BODY
- * dsa version major :: 2                                  :: 1 byte
- * dsa version minor :: 0                                  :: 1 byte
- * dsid length :: Uint8                                    :: 1 byte
+ * dsa version major :: 2                                  :: 1 uint8_t
+ * dsa version minor :: 0                                  :: 1 uint8_t
+ * dsid length :: Uint8                                    :: 1 uint8_t
  * dsid                                                    :: x bytes
  * public key                                              :: 65 bytes
- * security preference :: 0 = no encryption, 1 = encrypted :: 1 byte
+ * security preference :: 0 = no encryption, 1 = encrypted :: 1 uint8_t
  * client salt                                             :: 32 bytes
  */
 int client::load_f0() {
@@ -403,7 +400,7 @@ int client::load_f0() {
   std::memcpy(&write_buf[total_size], &header_length, sizeof(header_length));
   total_size += 2;
 
-  /* handshake message type f0, 1 byte */
+  /* handshake message type f0, 1 uint8_t */
   write_buf[total_size++] = 0xf0;
 
   /* request id (0 for handshake messages), 4 bytes */
@@ -420,19 +417,19 @@ int client::load_f0() {
   write_buf[total_size++] = dsid.size();
 
   /* dsid content */
-  for (byte c : dsid)
+  for (uint8_t c : dsid)
     write_buf[total_size++] = c;
 
   /* public key, 65 bytes */
-  for (byte c : public_key)
+  for (uint8_t c : *public_key)
     write_buf[total_size++] = c;
 
-  /* encryption preference, 1 byte */
+  /* encryption preference, 1 uint8_t */
   write_buf[total_size++] = 0; // no encryption
 
   /* salt, 32 bytes */
   // std::string salt = dsa::gen_salt(32);
-  for (byte c : salt)
+  for (uint8_t c : *salt)
     write_buf[total_size++] = c;
   // ss << (uint32_t)salt[31] << std::endl;
 
@@ -484,8 +481,8 @@ int client::load_f2() {
   write_buf[total++] = 0;
 
   /* auth */
-  std::memcpy(&write_buf[total], &auth[0], auth.size());
-  total += auth.size();
+  std::memcpy(&write_buf[total], auth->data(), auth->size());
+  total += auth->size();
 
   /* write total length */
   std::memcpy(write_buf, &total, sizeof(total));

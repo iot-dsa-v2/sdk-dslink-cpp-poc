@@ -9,7 +9,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "crypto.hpp"
+#include "crypto.h"
+#include "util.h"
+
+using namespace dsa;
 
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp>
@@ -23,22 +26,22 @@ typedef unsigned int uint;
 
 class client {
   enum { max_length = 2048, f0_bytes_wo_dsid = 112 };
-  byte write_buf[max_length];
-  byte read_buf[max_length];
+  uint8_t write_buf[max_length];
+  uint8_t read_buf[max_length];
 
   std::string dsid;
-  std::vector<byte> public_key;
+  std::shared_ptr<Buffer> public_key;
   dsa::ecdh ecdh;
-  std::vector<byte> shared_secret;
-  std::vector<byte> broker_dsid;
-  std::vector<byte> broker_public;
-  std::vector<byte> broker_salt;
-  std::vector<byte> broker_auth;
-  std::vector<byte> session_id;
-  std::vector<byte> path;
+  std::shared_ptr<Buffer> shared_secret;
+  std::shared_ptr<Buffer> broker_dsid;
+  std::shared_ptr<Buffer> broker_public;
+  std::shared_ptr<Buffer> broker_salt;
+  std::shared_ptr<Buffer> broker_auth;
+  std::shared_ptr<Buffer> session_id;
+  std::shared_ptr<Buffer> path;
   std::string token;
-  std::vector<byte> auth;
-  std::vector<byte> salt;
+  std::shared_ptr<Buffer> auth;
+  std::shared_ptr<Buffer> salt;
 
   boost::asio::io_service::strand strand;
 

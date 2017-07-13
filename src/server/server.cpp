@@ -15,7 +15,7 @@
 
 #include "connection.hpp"
 #include "session.hpp"
-#include "crypto.hpp"
+#include "crypto.h"
 
 Server::Server(boost::shared_ptr<boost::asio::io_service> io_service,
   short port)
@@ -28,7 +28,7 @@ Server::Server(boost::shared_ptr<boost::asio::io_service> io_service,
   dsa::hash hash("sha256");
 
   public_key = ecdh.get_public_key();
-  hash.update(public_key);
+  hash.update(*public_key);
 
   dsid = "broker-" + dsa::base64url(hash.digest_base64());
 

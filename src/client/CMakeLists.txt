@@ -29,6 +29,9 @@ set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 include_directories(${CMAKE_SOURCE_DIR}/src/crypto)
 set(EXTRA_LIBS ${EXTRA_LIBS} crypto)
 
+include_directories(${CMAKE_SOURCE_DIR}/src/util)
+set(EXTRA_LIBS ${EXTRA_LIBS} dsa_util)
+
 set(SOURCE_FILES 
   main.cpp
   client.cpp)

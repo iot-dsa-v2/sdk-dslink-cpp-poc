@@ -34,6 +34,9 @@ set(EXTRA_LIBS ${EXTRA_LIBS} crypto)
 include_directories(${CMAKE_SOURCE_DIR}/src/message)
 set(EXTRA_LIBS ${EXTRA_LIBS} message)
 
+include_directories(${CMAKE_SOURCE_DIR}/src/util)
+set(EXTRA_LIBS ${EXTRA_LIBS} dsa_util)
+
 set(SOURCE_FILES 
   main.cpp
   server.cpp

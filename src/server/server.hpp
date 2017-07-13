@@ -3,11 +3,16 @@
 #include <atomic>
 #include <string>
 #include <vector>
+#include <memory>
+
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <openssl/hmac.h>
 
-#include "crypto.hpp"
+#include "crypto.h"
+#include "util.h"
+
+using namespace dsa;
 
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp>
@@ -27,7 +32,7 @@ private:
   
   boost::asio::ip::tcp::acceptor acceptor;
   std::string dsid;
-  std::vector<byte> public_key;
+  std::shared_ptr<Buffer> public_key;
   dsa::ecdh ecdh;
 #ifdef USE_SSL
   boost::asio::ssl::context context;

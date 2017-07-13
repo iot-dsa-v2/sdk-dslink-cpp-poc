@@ -8,7 +8,7 @@
 #include <boost/asio.hpp>
 #include "message.hpp"
 
-typedef uint8_t byte;
+typedef uint8_t uint8_t;
 
 using namespace dsa::message;
 
@@ -41,7 +41,7 @@ private:
   std::atomic_int sent_count;
 
   void send_response(uint32_t rid);
-  void send_done(byte * buf, const boost::system::error_code & error, size_t bytes_transferred);
+  void send_done(uint8_t * buf, const boost::system::error_code & error, size_t bytes_transferred);
 
   void start();
 };

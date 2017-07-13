@@ -57,10 +57,10 @@ void Session::receive_request(message_buffer* buf,
 }
 
 bool Session::parse_message(message_buffer* buf, size_t bytes_transferred, size_t offset) {
-  byte *cur = buf->data() + offset;
+  uint8_t *cur = buf->data() + offset;
   uint32_t size;
   uint16_t header_size;
-  byte method_type;
+  uint8_t method_type;
   uint32_t rid;
 
   memcpy(&size, cur, sizeof(size));
@@ -102,7 +102,7 @@ void Session::start_timer() {
 }
 
 void Session::send_response(uint32_t rid) {
-  byte * buf = new byte[1000];
+  uint8_t * buf = new uint8_t[1000];
   uint32_t total = 0;
 
   /* total length placeholder */
@@ -138,7 +138,7 @@ void Session::send_response(uint32_t rid) {
       boost::asio::placeholders::bytes_transferred));
 }
 
-void Session::send_done(byte * buf, const boost::system::error_code & error,
+void Session::send_done(uint8_t * buf, const boost::system::error_code & error,
   size_t bytes_transferred) {
   delete[] buf;
   std::stringstream ss;

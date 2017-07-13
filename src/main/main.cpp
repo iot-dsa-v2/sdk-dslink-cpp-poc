@@ -8,7 +8,7 @@ int main() {
 	// dsa::message::basic_message* sub_msg_hdl = mf.new_message(dsa::message::MESSAGE_SUBSCRIBE);
 	// sub_msg_hdl->do_something();
 
-	// std::vector<byte> salt = dsa::gen_salt(32);
+	// std::vector<uint8_t> salt = dsa::gen_salt(32);
 	// std::cout << salt << std::endl;
 
 	using namespace dsa::message;

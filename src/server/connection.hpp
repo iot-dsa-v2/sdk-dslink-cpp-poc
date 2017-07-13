@@ -6,10 +6,13 @@
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "crypto.hpp"
+#include "crypto.h"
 #include "message.hpp"
+#include "util.h"
 
-using namespace dsa::message;
+using namespace dsa;
+
+typedef message::message_buffer message_buffer;
 
 class Server;
 class Session;
@@ -28,16 +31,15 @@ private:
   boost::asio::ip::tcp::socket sock;
 #endif // USE_SSL
 
-  std::vector<byte> shared_secret;
-  std::vector<byte> client_dsid;
-  std::vector<byte> client_public;
-  std::vector<byte> client_salt;
-  std::vector<byte> client_token;
-  std::vector<byte> client_auth;
-  std::vector<byte> auth;
-  std::vector<byte> salt;
+  std::shared_ptr<Buffer> shared_secret;
+  std::shared_ptr<Buffer> client_dsid;
+  std::shared_ptr<Buffer> client_public;
+  std::shared_ptr<Buffer> client_salt;
+  std::shared_ptr<Buffer> client_token;
+  std::shared_ptr<Buffer> client_auth;
+  std::shared_ptr<Buffer> auth;
+  std::shared_ptr<Buffer> salt;
 
-  std::string session_id;
   std::string path;
 
   bool use_ssl;
@@ -65,6 +67,8 @@ private:
     size_t bytes_transferred);
 
 public:
+  std::string session_id;
+
   boost::asio::io_service::strand strand;
 
   Server& serv;

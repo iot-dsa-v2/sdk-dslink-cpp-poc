@@ -41,6 +41,7 @@ Connection::Connection(Server &s,
   session_id = ss.str();
   path = "/fake/path";
   salt = dsa::gen_salt(32);
+  // std::cout << *salt << " " << salt->size() << std::endl;
 }
 
 Connection::~Connection() {
@@ -114,7 +115,7 @@ void Connection::f0_received(message_buffer* buf,
     ss << "f0 received, " << bytes_transferred << " bytes transferred"
       << std::endl;
 
-    byte *cur = buf->data();
+    uint8_t *cur = buf->data();
 
     /* check to make sure message size matches */
     checking(ss, "message size");
@@ -151,7 +152,7 @@ void Connection::f0_received(message_buffer* buf,
 
     /* check DSA version */
     checking(ss, "DSA version");
-    byte version[2];
+    uint8_t version[2];
     std::memcpy(version, cur, sizeof(version));
     END_IF(version[0] != 2 && version[1] != 0);
     cur += sizeof(version);
@@ -159,7 +160,7 @@ void Connection::f0_received(message_buffer* buf,
 
     /* check DSID length */
     checking(ss, "DSID length");
-    byte dsid_length;
+    uint8_t dsid_length;
     std::memcpy(&dsid_length, cur, sizeof(dsid_length));
     END_IF(dsid_length > 60 || dsid_length < 20);
     cur += sizeof(dsid_length);
@@ -167,19 +168,17 @@ void Connection::f0_received(message_buffer* buf,
 
     /* save DSID */
     checking(ss, "client DSID", true);
-    byte new_dsid[1000];
-    std::memcpy(new_dsid, cur, dsid_length);
+    client_dsid = std::make_shared<Buffer>(dsid_length);
+    client_dsid->assign(cur, dsid_length);
     cur += dsid_length;
-    client_dsid = std::vector<byte>(new_dsid, new_dsid + dsid_length);
     // END_IF(cur > buf + message_size);
     ss << "done" << std::endl;
 
     /* save public key */
     checking(ss, "client public key", true);
-    byte tmp_pub[65];
-    std::memcpy(tmp_pub, cur, sizeof(tmp_pub));
-    cur += sizeof(tmp_pub);
-    client_public = std::vector<byte>(tmp_pub, tmp_pub + sizeof(tmp_pub));
+    client_public = std::make_shared<Buffer>(65);
+    client_public->assign(cur, client_public->capacity());
+    cur += client_public->size();
     // END_IF(cur > buf + message_size);
     ss << "done" << std::endl;
 
@@ -192,10 +191,9 @@ void Connection::f0_received(message_buffer* buf,
 
     /* save client salt */
     checking(ss, "client salt", true);
-    byte tmp_salt[32];
-    std::memcpy(tmp_salt, cur, sizeof(tmp_salt));
-    cur += sizeof(tmp_salt);
-    client_salt = std::vector<byte>(tmp_salt, tmp_salt + sizeof(tmp_salt));
+    client_salt = std::make_shared<Buffer>(32);
+    client_salt->assign(cur, client_salt->capacity());
+    cur += client_salt->capacity();
     // END_IF(cur != buf + message_size);
     ss << "done" << std::endl << std::endl;
     std::cout << ss.str();
@@ -212,16 +210,16 @@ void Connection::f0_received(message_buffer* buf,
 }
 
 void Connection::compute_secret() {
-  shared_secret = serv.ecdh.compute_secret(client_public);
+  shared_secret = serv.ecdh.compute_secret(*client_public);
 
   /* compute broker auth */
-  dsa::hmac hmac("sha256", shared_secret);
-  hmac.update(client_salt);
+  dsa::hmac hmac("sha256", *shared_secret);
+  hmac.update(*client_salt);
   auth = hmac.digest();
 
   /* compute client auth */
-  dsa::hmac client_hmac("sha256", shared_secret);
-  client_hmac.update(salt);
+  dsa::hmac client_hmac("sha256", *shared_secret);
+  client_hmac.update(*salt);
   client_auth = client_hmac.digest();
 }
 
@@ -267,7 +265,7 @@ void Connection::f2_received(message_buffer *buf,
     ss << "f2 received, " << bytes_transferred << " bytes transferred"
       << std::endl;
 
-    byte *cur = buf->data();
+    uint8_t *cur = buf->data();
 
     /* check to make sure message size matches */
     checking(ss, "message size");
@@ -310,9 +308,9 @@ void Connection::f2_received(message_buffer *buf,
 
     /* save token */
     checking(ss, "client token", true);
-    byte token[1000];
-    std::memcpy(token, cur, token_length);
-    // client_token = std::vector<byte>(token, token + token_length);
+    client_token = std::make_shared<Buffer>(token_length);
+    client_token->assign(cur, token_length);
+    // client_token = std::vector<uint8_t>(token, token + token_length);
     cur += token_length;
     ss << "done" << std::endl;
 
@@ -333,8 +331,9 @@ void Connection::f2_received(message_buffer *buf,
 
     /* check client auth */
     checking(ss, "client auth");
+    uint8_t *auth_ptr = client_auth->data(); 
     for (int i = 0; i < 32; ++i)
-      END_IF(*(cur++) != client_auth[i]);
+      END_IF(cur[i] != auth_ptr[i]);
     ss << "done" << std::endl;
     std::cout << ss.str();
 
@@ -374,11 +373,11 @@ void Connection::f3_sent(message_buffer* buf,
  * HEADER
  * total length :: Uint32 in LE                            :: 4 bytes
  * header length :: Uint16 in LE                           :: 2 bytes
- * handshake message type :: f1                            :: 1 byte
+ * handshake message type :: f1                            :: 1 uint8_t
  * request id :: 0 for handshake messages                  :: 4 bytes
  *
  * BODY
- * dsid length :: Uint8                                    :: 1 byte
+ * dsid length :: Uint8                                    :: 1 uint8_t
  * dsid                                                    :: x bytes
  * public key                                              :: 65 bytes
  * broker salt                                             :: 32 bytes
@@ -397,7 +396,7 @@ int Connection::load_f1(message_buffer* buf) {
   std::memcpy(&write_buf[total_size], &header_length, sizeof(header_length));
   total_size += 2;
 
-  /* handshake message type f0, 1 byte */
+  /* handshake message type f0, 1 uint8_t */
   write_buf[total_size++] = 0xf1;
 
   /* request id (0 for handshake messages), 4 bytes */
@@ -408,16 +407,16 @@ int Connection::load_f1(message_buffer* buf) {
   write_buf[total_size++] = serv.dsid.size();
 
   /* dsid content */
-  for (byte c : serv.dsid)
+  for (uint8_t c : serv.dsid)
     write_buf[total_size++] = c;
 
   /* public key, 65 bytes */
-  for (byte c : serv.public_key)
+  for (uint8_t c : *serv.public_key)
     write_buf[total_size++] = c;
 
   /* salt, 32 bytes */
   // std::string salt = dsa::gen_salt(32);
-  for (byte c : salt)
+  for (uint8_t c : *salt)
     write_buf[total_size++] = c;
   // std::cout << (uint32_t)salt[31] << std::endl;
 
@@ -468,8 +467,8 @@ int Connection::load_f3(message_buffer* buf) {
   total += path_length;
 
   /* auth */
-  std::memcpy(&write_buf[total], &auth[0], auth.size());
-  total += auth.size();
+  std::memcpy(&write_buf[total], auth->data(), auth->size());
+  total += auth->size();
 
   /* write total length */
   std::memcpy(write_buf, &total, sizeof(total));
